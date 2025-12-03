@@ -2,68 +2,182 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Tradable – Stock CSV Viewer</title>
+<title>Tradable – Advanced Stock Data Viewer</title>
+
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
 body {
   font-family: Arial, sans-serif;
   padding: 20px;
+  background: #f5f7fa;
 }
+
+h1 {
+  margin-bottom: 10px;
+}
+
 #search {
   padding: 8px;
-  width: 250px;
+  width: 280px;
   margin-bottom: 15px;
+  border: 1px solid #bbb;
+  border-radius: 5px;
 }
+
 table {
   border-collapse: collapse;
   width: 100%;
+  margin-top: 10px;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
 }
+
 th, td {
-  padding: 8px;
-  border: 1px solid #dddddd;
+  padding: 10px;
+  border-bottom: 1px solid #eee;
 }
+
 th {
+  background: #e8ecf1;
+  cursor: pointer;
+}
+
+tr:hover {
   background: #f3f3f3;
 }
-tr:nth-child(even) {
-  background: #fafafa;
+
+/* Chart Cards */
+.chart-card {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  margin-top: 25px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
 }
 </style>
-
 </head>
+
 <body>
 
-<h1>📈 Tradable – Stock Data Viewer</h1>
-
+<h1>📈 Tradable – Advanced Stock Viewer</h1>
 <input id="search" placeholder="Search..." oninput="filterTable()">
 
+<!-- TABLE -->
 <table id="table"></table>
 
+<!-- PRICE CHART -->
+<div class="chart-card">
+  <h2>📉 Price Line Chart</h2>
+  <canvas id="priceChart"></canvas>
+</div>
+
+<!-- EPS CHART -->
+<div class="chart-card">
+  <h2>📊 EPS Bar Chart</h2>
+  <canvas id="epsChart"></canvas>
+</div>
+
+
 <script>
+let tableData = [];
+let header = [];
+
+// Load CSV
 async function loadCSV() {
   const res = await fetch("data.csv");
   const text = await res.text();
   const rows = text.trim().split("\n").map(r => r.split(","));
 
-  let html = "";
-  rows.forEach((row, idx) => {
+  header = rows[0];
+  tableData = rows.slice(1);
+
+  renderTable(tableData);
+  drawCharts(tableData);
+}
+
+// Render Table
+function renderTable(data) {
+  let html = "<tr>";
+  header.forEach((col, idx) => {
+    html += `<th onclick="sortColumn(${idx})">${col}</th>`;
+  });
+  html += "</tr>";
+
+  data.forEach(row => {
     html += "<tr>";
-    row.forEach(col => {
-      html += idx === 0 ? `<th>${col}</th>` : `<td>${col}</td>`;
-    });
+    row.forEach(col => html += `<td>${col}</td>`);
     html += "</tr>";
   });
 
   document.getElementById("table").innerHTML = html;
 }
 
+// Sorting
+let sortDirection = true;
+
+function sortColumn(colIndex) {
+  tableData.sort((a, b) => {
+    let x = a[colIndex], y = b[colIndex];
+
+    let nX = parseFloat(x), nY = parseFloat(y);
+
+    if (!isNaN(nX) && !isNaN(nY)) {
+      return sortDirection ? nX - nY : nY - nX;
+    }
+    return sortDirection 
+      ? x.localeCompare(y)
+      : y.localeCompare(x);
+  });
+
+  sortDirection = !sortDirection;
+  renderTable(tableData);
+}
+
+// Search filter
 function filterTable() {
   const q = document.getElementById("search").value.toLowerCase();
-  const trs = document.querySelectorAll("#table tr");
+  const filtered = tableData.filter(row =>
+    row.join(" ").toLowerCase().includes(q)
+  );
+  renderTable(filtered);
+}
 
-  trs.forEach((tr, index) => {
-    if (index === 0) return; 
-    tr.style.display = tr.innerText.toLowerCase().includes(q) ? "" : "none";
+// Charts
+function drawCharts(data) {
+  const labels = data.map(r => r[0]); // stock symbols
+  const prices = data.map(r => parseFloat(r[2]));
+  const epsValues = data.map(r => parseFloat(r[4]));
+
+  // PRICE LINE CHART
+  new Chart(document.getElementById("priceChart"), {
+    type: "line",
+    data: {
+      labels: labels,
+      datasets: [{
+        label: "Price",
+        data: prices,
+        borderWidth: 2,
+        borderColor: "#007bff",
+        pointRadius: 3,
+        fill: false
+      }]
+    }
+  });
+
+  // EPS BAR CHART
+  new Chart(document.getElementById("epsChart"), {
+    type: "bar",
+    data: {
+      labels: labels,
+      datasets: [{
+        label: "EPS",
+        data: epsValues,
+        backgroundColor: "#28a745"
+      }]
+    }
   });
 }
 
