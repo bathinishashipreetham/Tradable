@@ -1,3 +1,7 @@
+## 🖼️ Dashboard Screenshot
+
+![Dashboard](screenshots/dashboard.png)
+
 # Tradable
 
 ## Project Overview
