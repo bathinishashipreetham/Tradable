@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Tradable – Stock CSV Viewer</title>
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  padding: 20px;
+}
+#search {
+  padding: 8px;
+  width: 250px;
+  margin-bottom: 15px;
+}
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+th, td {
+  padding: 8px;
+  border: 1px solid #dddddd;
+}
+th {
+  background: #f3f3f3;
+}
+tr:nth-child(even) {
+  background: #fafafa;
+}
+</style>
+
+</head>
+<body>
+
+<h1>📈 Tradable – Stock Data Viewer</h1>
+
+<input id="search" placeholder="Search..." oninput="filterTable()">
+
+<table id="table"></table>
+
+<script>
+async function loadCSV() {
+  const res = await fetch("data.csv");
+  const text = await res.text();
+  const rows = text.trim().split("\n").map(r => r.split(","));
+
+  let html = "";
+  rows.forEach((row, idx) => {
+    html += "<tr>";
+    row.forEach(col => {
+      html += idx === 0 ? `<th>${col}</th>` : `<td>${col}</td>`;
+    });
+    html += "</tr>";
+  });
+
+  document.getElementById("table").innerHTML = html;
+}
+
+function filterTable() {
+  const q = document.getElementById("search").value.toLowerCase();
+  const trs = document.querySelectorAll("#table tr");
+
+  trs.forEach((tr, index) => {
+    if (index === 0) return; 
+    tr.style.display = tr.innerText.toLowerCase().includes(q) ? "" : "none";
+  });
+}
+
+loadCSV();
+</script>
+
+</body>
+</html>
