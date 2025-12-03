@@ -1,188 +1,485 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta charset="utf-8">
-<title>Tradable – Advanced Stock Data Viewer</title>
+<meta charset="utf-8" />
+<title>Tradable — Pro Dashboard</title>
 
-<!-- Chart.js CDN -->
+<!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+<!-- Google Fonts (optional) -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
 <style>
-body {
-  font-family: Arial, sans-serif;
-  padding: 20px;
-  background: #f5f7fa;
+:root{
+  --bg:#f4f7fb;
+  --card:#ffffff;
+  --text:#222;
+  --muted:#6b7280;
+  --accent:#2563eb;
+  --success:#16a34a;
+  --danger:#ef4444;
+  --glass: rgba(255,255,255,0.6);
+}
+[data-theme="dark"] {
+  --bg:#0b1220;
+  --card:#0f1724;
+  --text:#e6eef8;
+  --muted:#9aa6b2;
+  --accent:#60a5fa;
+  --success:#34d399;
+  --danger:#fb7185;
+  --glass: rgba(255,255,255,0.02);
+}
+*{box-sizing:border-box}
+body{
+  font-family: "Inter", Arial, sans-serif;
+  margin:0;
+  background: linear-gradient(180deg,var(--bg), #e9eef7 120%);
+  color:var(--text);
+  padding:18px;
+}
+.header {
+  display:flex;
+  gap:16px;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:14px;
+}
+.brand {
+  display:flex;
+  gap:12px;
+  align-items:center;
+}
+.logo {
+  width:52px;height:52px;border-radius:10px;
+  background:linear-gradient(135deg,var(--accent), #7c3aed);
+  display:flex;align-items:center;justify-content:center;color:white;font-weight:700;box-shadow:0 6px 18px rgba(23,23,23,0.08);
+}
+.title {font-size:20px;font-weight:700}
+.controls {
+  display:flex;gap:10px;align-items:center;
+}
+.btn {
+  padding:8px 12px;border-radius:8px;border:0;background:var(--card);cursor:pointer;box-shadow:0 1px 4px rgba(2,6,23,0.06);
+  color:var(--text);
+}
+.small { padding:6px 10px;font-size:13px }
+
+.search {
+  padding:10px 12px;border-radius:10px;border:1px solid rgba(0,0,0,0.06);width:300px;background:var(--card);
+  color:var(--text);
 }
 
-h1 {
-  margin-bottom: 10px;
+.grid {
+  display:grid;
+  grid-template-columns: 1fr 420px;
+  gap:18px;
+  align-items:start;
 }
 
-#search {
-  padding: 8px;
-  width: 280px;
-  margin-bottom: 15px;
-  border: 1px solid #bbb;
-  border-radius: 5px;
+/* Left column holds table and pagination */
+.left {
+  background: linear-gradient(to bottom right, var(--glass), rgba(0,0,0,0.01));
+  padding:14px;border-radius:12px;
+  box-shadow:0 6px 18px rgba(2,6,23,0.04);
 }
 
-table {
-  border-collapse: collapse;
-  width: 100%;
-  margin-top: 10px;
-  background: white;
-  border-radius: 8px;
-  overflow: hidden;
+/* Table */
+.table-wrap{overflow:auto;max-height:520px;border-radius:8px}
+table.stocks {
+  width:100%;border-collapse:collapse;font-size:13px;
+}
+table.stocks thead th {
+  position: sticky; top:0; background:var(--card); cursor:pointer; text-align:left; padding:10px 8px;
+  border-bottom:1px solid rgba(0,0,0,0.06);
+}
+table.stocks tbody td { padding:8px;font-size:13px;border-bottom:1px solid rgba(0,0,0,0.04) }
+tr:hover td { background: linear-gradient(90deg, rgba(0,0,0,0.01), transparent) }
+.badge { padding:4px 8px;border-radius:999px;font-weight:600;font-size:12px;display:inline-block }
+
+/* Right column cards (charts) */
+.right { display:flex; flex-direction:column; gap:14px; }
+.card { background:var(--card); padding:14px; border-radius:12px; box-shadow:0 6px 18px rgba(2,6,23,0.04) }
+
+/* pagination */
+.pager { display:flex;gap:8px;align-items:center; margin-top:10px }
+.pager button{padding:8px 10px;border-radius:8px;border:1px solid rgba(0,0,0,0.06);background:transparent;cursor:pointer}
+
+/* toggles */
+.toggle {
+  display:flex;gap:8px;align-items:center;
+  background:var(--card);padding:6px;border-radius:999px;border:1px solid rgba(0,0,0,0.04)
 }
 
-th, td {
-  padding: 10px;
-  border-bottom: 1px solid #eee;
-}
+/* legend */
+.legend { display:flex;gap:8px;flex-wrap:wrap; margin-top:8px; font-size:13px; color:var(--muted) }
 
-th {
-  background: #e8ecf1;
-  cursor: pointer;
-}
-
-tr:hover {
-  background: #f3f3f3;
-}
-
-/* Chart Cards */
-.chart-card {
-  background: white;
-  padding: 20px;
-  border-radius: 8px;
-  margin-top: 25px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-}
+/* responsive */
+@media (max-width:980px){ .grid{grid-template-columns:1fr} .right{order:2} .left{order:1} .search{width:100%} }
 </style>
 </head>
+<body data-theme="light">
 
-<body>
+<div class="header">
+  <div class="brand">
+    <div class="logo">T</div>
+    <div>
+      <div class="title">Tradable — Pro Dashboard</div>
+      <div style="font-size:12px;color:var(--muted)">Interactive stock CSV viewer & analytics</div>
+    </div>
+  </div>
 
-<h1>📈 Tradable – Advanced Stock Viewer</h1>
-<input id="search" placeholder="Search..." oninput="filterTable()">
-
-<!-- TABLE -->
-<table id="table"></table>
-
-<!-- PRICE CHART -->
-<div class="chart-card">
-  <h2>📉 Price Line Chart</h2>
-  <canvas id="priceChart"></canvas>
+  <div class="controls">
+    <input id="search" class="search" placeholder="Search symbol, company, sector..." oninput="applySearch()" />
+    <div class="toggle btn small" id="themeToggle" title="Toggle dark / light">🌙</div>
+    <button class="btn small" id="downloadBtn" title="Download CSV">⬇ Download CSV</button>
+    <button class="btn small" id="reloadBtn" title="Reload CSV">🔄 Reload</button>
+  </div>
 </div>
 
-<!-- EPS CHART -->
-<div class="chart-card">
-  <h2>📊 EPS Bar Chart</h2>
-  <canvas id="epsChart"></canvas>
-</div>
+<div class="grid">
+  <div class="left">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div style="font-weight:600">Stocks</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <label style="font-size:13px;color:var(--muted)">Rows</label>
+        <select id="rowsPerPage" class="btn small" onchange="renderTable()">
+          <option>25</option><option selected>50</option><option>100</option>
+        </select>
+      </div>
+    </div>
 
+    <div class="table-wrap">
+      <table class="stocks" id="stocksTable">
+        <thead></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div class="pager">
+      <button onclick="prevPage()">◀ Prev</button>
+      <div id="pageInfo" style="font-size:13px;color:var(--muted)"></div>
+      <button onclick="nextPage()">Next ▶</button>
+      <div style="flex:1"></div>
+      <div class="legend" id="legend"></div>
+    </div>
+  </div>
+
+  <div class="right">
+    <div class="card">
+      <h3 style="margin:0 0 8px">📉 Price (Animated Line)</h3>
+      <canvas id="priceChart" height="150"></canvas>
+    </div>
+
+    <div class="card">
+      <h3 style="margin:0 0 8px">📊 PE Comparison</h3>
+      <canvas id="peChart" height="120"></canvas>
+    </div>
+
+    <div class="card">
+      <h3 style="margin:0 0 8px">📦 Sector Distribution</h3>
+      <canvas id="sectorChart" height="120"></canvas>
+      <div id="sectorStats" style="margin-top:8px;font-size:13px;color:var(--muted)"></div>
+    </div>
+
+    <div class="card">
+      <h3 style="margin:0 0 8px">📥 Volume (Bar)</h3>
+      <canvas id="volumeChart" height="120"></canvas>
+    </div>
+  </div>
+</div>
 
 <script>
-let tableData = [];
-let header = [];
+/*
+Behavior:
+- Parses data.csv (flexible column detection)
+- If Sector/Volume columns missing -> create demo values
+- Provides sorting, search, pagination
+- Builds charts (Chart.js) with animations
+*/
 
-// Load CSV
-async function loadCSV() {
-  const res = await fetch("data.csv");
-  const text = await res.text();
-  const rows = text.trim().split("\n").map(r => r.split(","));
+// Globals
+let RAW = [];      // raw rows as arrays
+let HEAD = [];     // header names
+let DATA = [];     // normalized objects [{symbol,company,price,pe,eps,sector,volume}]
+let currentPage = 1;
+let rowsPerPage = 50;
+let sortState = {col:null, dir:1}; // col = key name
+let charts = {};
+const colorPalette = [
+  '#ef4444','#f97316','#f59e0b','#eab308','#84cc16','#10b981','#06b6d4','#3b82f6','#6366f1','#8b5cf6',
+  '#ec4899','#f472b6','#a78bfa','#60a5fa','#34d399'
+];
 
-  header = rows[0];
-  tableData = rows.slice(1);
+// UTIL: safe parse float
+function pfloat(v){ const n=parseFloat(String(v).replace(/,/g,'')); return isNaN(n)?null:n; }
 
-  renderTable(tableData);
-  drawCharts(tableData);
+// Load CSV file and initialize
+async function init(){
+  try {
+    const res = await fetch('data.csv', {cache:'no-store'});
+    if(!res.ok) throw new Error('data.csv not found');
+    const text = await res.text();
+    parseCSV(text);
+    normalizeData();
+    renderTable();
+    buildAllCharts();
+    updateLegend();
+  } catch(e) {
+    document.getElementById('stocksTable').innerHTML = '<thead><tr><th>Error</th></tr></thead><tbody><tr><td>'+e.message+'</td></tr></tbody>';
+    console.error(e);
+  }
 }
 
-// Render Table
-function renderTable(data) {
-  let html = "<tr>";
-  header.forEach((col, idx) => {
-    html += `<th onclick="sortColumn(${idx})">${col}</th>`;
-  });
-  html += "</tr>";
-
-  data.forEach(row => {
-    html += "<tr>";
-    row.forEach(col => html += `<td>${col}</td>`);
-    html += "</tr>";
-  });
-
-  document.getElementById("table").innerHTML = html;
+// Parse CSV (simple, assumes no newline-in-field)
+function parseCSV(text){
+  const rows = text.trim().split(/\r?\n/).map(r => r.split(',').map(c=>c.trim()));
+  HEAD = rows[0].map(h => h.replace(/["']/g,'').trim());
+  RAW = rows.slice(1).filter(r=>r.length>=1 && r.join('').trim()!=='');
 }
 
-// Sorting
-let sortDirection = true;
-
-function sortColumn(colIndex) {
-  tableData.sort((a, b) => {
-    let x = a[colIndex], y = b[colIndex];
-
-    let nX = parseFloat(x), nY = parseFloat(y);
-
-    if (!isNaN(nX) && !isNaN(nY)) {
-      return sortDirection ? nX - nY : nY - nX;
+// Normalize into DATA array of objects and handle missing columns
+function normalizeData(){
+  const idx = {};
+  HEAD.forEach((h,i)=> idx[h.toLowerCase()] = i);
+  // helper to get value by possible names
+  function getVal(row, names){
+    for(const n of names){
+      if(idx[n] !== undefined) return row[idx[n]];
     }
-    return sortDirection 
-      ? x.localeCompare(y)
-      : y.localeCompare(x);
-  });
+    return null;
+  }
 
-  sortDirection = !sortDirection;
-  renderTable(tableData);
+  // detect keys:
+  const nameSymbol = ['symbol','ticker','sym'];
+  const nameCompany = ['company','name'];
+  const namePrice = ['price','last','close'];
+  const namePE = ['pe','p/e','pe_ratio','pe ratio'];
+  const nameEPS = ['eps'];
+  const nameSector = ['sector','industry'];
+  const nameVolume = ['volume','vol'];
+
+  DATA = RAW.map((row, i) => {
+    const symbol = getVal(row, nameSymbol) || row[0] || `SYM${i+1}`;
+    const company = getVal(row, nameCompany) || getVal(row, ['companyname']) || (row[1] || symbol);
+    const price = pfloat(getVal(row, namePrice)) ?? pfloat(row[2]) ?? (Math.random()*200 + 10);
+    const pe = pfloat(getVal(row, namePE)) ?? pfloat(row[3]) ?? Math.round((Math.random()*40+5)*10)/10;
+    const eps = pfloat(getVal(row, nameEPS)) ?? pfloat(row[4]) ?? Math.round((Math.random()*10+0.5)*100)/100;
+    let sector = getVal(row, nameSector) || null;
+    let volume = pfloat(getVal(row, nameVolume)) ?? null;
+
+    // If sector missing, assign a demo sector from palette (ensures diversity)
+    if(!sector || sector.length===0){
+      const demo = ['Technology','Finance','Energy','Consumer','Healthcare','Industrials','Utilities','Materials'];
+      sector = demo[i % demo.length];
+    }
+    // If volume missing, make a random plausible number
+    if(!volume) volume = Math.round((Math.random()*900 + 100) * (Math.random()>0.7?1000:1));
+
+    return { symbol, company, price, pe, eps, sector, volume };
+  });
 }
 
-// Search filter
-function filterTable() {
-  const q = document.getElementById("search").value.toLowerCase();
-  const filtered = tableData.filter(row =>
-    row.join(" ").toLowerCase().includes(q)
-  );
+// Rendering table with pagination, sorting and search
+function renderTable(filteredList){
+  const containerThead = document.querySelector('#stocksTable thead');
+  const containerBody = document.querySelector('#stocksTable tbody');
+  const list = filteredList || DATA.slice();
+
+  // Apply sorting if any
+  if(sortState.col){
+    list.sort((a,b)=>{
+      const ka = a[sortState.col], kb = b[sortState.col];
+      if(typeof ka === 'number' && typeof kb === 'number') return (ka - kb) * sortState.dir;
+      return (String(ka).localeCompare(String(kb))) * sortState.dir;
+    });
+  }
+
+  // Pagination
+  rowsPerPage = parseInt(document.getElementById('rowsPerPage').value || 50);
+  const total = list.length;
+  const pages = Math.max(1, Math.ceil(total / rowsPerPage));
+  if(currentPage > pages) currentPage = pages;
+
+  const start = (currentPage - 1) * rowsPerPage;
+  const pageRows = list.slice(start, start + rowsPerPage);
+
+  // Header
+  // Build header from keys to show: Symbol, Company, Price, PE, EPS, Sector, Volume
+  const cols = ['symbol','company','price','pe','eps','sector','volume'];
+  const pretty = {symbol:'Symbol',company:'Company',price:'Price',pe:'PE',eps:'EPS',sector:'Sector',volume:'Volume'};
+  containerThead.innerHTML = '<tr>' + cols.map(c=>`<th onclick="onHeaderClick('${c}')">${pretty[c]} ${sortState.col===c ? (sortState.dir>0?'▲':'▼') : ''}</th>`).join('') + '</tr>';
+
+  // Body
+  containerBody.innerHTML = pageRows.map(d=>`
+    <tr>
+      <td style="font-weight:700">${escapeHtml(d.symbol)}</td>
+      <td>${escapeHtml(d.company)}</td>
+      <td>${formatNumber(d.price, true)}</td>
+      <td>${formatNumber(d.pe,false)}</td>
+      <td>${formatNumber(d.eps,false)}</td>
+      <td><span class="badge" style="background:${pickColor(d.sector)};color:white">${escapeHtml(d.sector)}</span></td>
+      <td>${formatNumber(d.volume,false,true)}</td>
+    </tr>`).join('');
+
+  // page info
+  document.getElementById('pageInfo').innerText = `Page ${currentPage} / ${pages} — ${total} rows`;
+}
+
+// Helpers
+function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function formatNumber(v, isCurrency=false, isInteger=false){
+  if(v === null || v === undefined) return '-';
+  if(isCurrency) return '₹' + Number(v).toLocaleString(undefined, {maximumFractionDigits:2});
+  if(isInteger) return Number(v).toLocaleString();
+  return Number(v).toLocaleString(undefined, {maximumFractionDigits:2});
+}
+function pickColor(key){
+  const i = Math.abs(hashString(key)) % colorPalette.length;
+  return colorPalette[i];
+}
+function hashString(s){
+  let h=0; for(let i=0;i<s.length;i++) h = ((h<<5)-h)+s.charCodeAt(i); return h;
+}
+
+// Sorting header click
+function onHeaderClick(col){
+  if(sortState.col === col) sortState.dir = -sortState.dir;
+  else { sortState.col = col; sortState.dir = 1; }
+  renderTable();
+}
+
+// Pagination
+function prevPage(){ if(currentPage>1){ currentPage--; renderTable(); } }
+function nextPage(){ currentPage++; renderTable(); }
+
+// Search
+function applySearch(){
+  const q = (document.getElementById('search').value || '').toLowerCase().trim();
+  if(!q){ renderTable(); buildAllCharts(); return; }
+  const filtered = DATA.filter(d => {
+    return (d.symbol + ' ' + d.company + ' ' + d.sector).toLowerCase().includes(q)
+      || String(d.price).includes(q) || String(d.pe).includes(q);
+  });
+  currentPage = 1;
   renderTable(filtered);
+  buildAllCharts(filtered);
 }
 
-// Charts
-function drawCharts(data) {
-  const labels = data.map(r => r[0]); // stock symbols
-  const prices = data.map(r => parseFloat(r[2]));
-  const epsValues = data.map(r => parseFloat(r[4]));
+// Build Charts
+function buildAllCharts(filteredList){
+  const list = filteredList || DATA;
+  // sort by symbol for stability
+  const labels = list.map(d=>d.symbol);
+  const prices = list.map(d=>d.price);
+  const eps = list.map(d=>d.eps);
+  const volumes = list.map(d=>d.volume);
+  const pes = list.map(d=>d.pe);
 
-  // PRICE LINE CHART
-  new Chart(document.getElementById("priceChart"), {
-    type: "line",
+  // price chart (line)
+  if(charts.price) charts.price.destroy();
+  charts.price = new Chart(document.getElementById('priceChart'), {
+    type: 'line',
     data: {
-      labels: labels,
-      datasets: [{
-        label: "Price",
+      labels, datasets: [{
+        label:'Price',
         data: prices,
-        borderWidth: 2,
-        borderColor: "#007bff",
-        pointRadius: 3,
-        fill: false
+        borderColor:'#2563eb',
+        backgroundColor:'rgba(37,99,235,0.08)',
+        tension:0.25,
+        pointRadius:3
       }]
+    },
+    options: {
+      responsive:true, animation:{duration:800},
+      plugins:{legend:{display:false}},
+      scales:{ x:{ display:false }, y:{ ticks:{callback: v => '₹' + v } } }
     }
   });
 
-  // EPS BAR CHART
-  new Chart(document.getElementById("epsChart"), {
-    type: "bar",
-    data: {
-      labels: labels,
-      datasets: [{
-        label: "EPS",
-        data: epsValues,
-        backgroundColor: "#28a745"
-      }]
-    }
+  // PE Comparison => show top N comparatives (we will show first up to 10)
+  const topN = Math.min(10, list.length);
+  const topLabels = list.slice(0,topN).map(d=>d.symbol);
+  const topPE = list.slice(0,topN).map(d=>d.pe);
+  const topEPS = list.slice(0,topN).map(d=>d.eps);
+  if(charts.pe) charts.pe.destroy();
+  charts.pe = new Chart(document.getElementById('peChart'), {
+    type:'bar',
+    data:{
+      labels: topLabels,
+      datasets: [
+        { label:'PE', data: topPE, backgroundColor:'#f97316' },
+        { label:'EPS', data: topEPS, backgroundColor:'#10b981' }
+      ]
+    },
+    options:{ responsive:true, animation:{duration:900}, scales:{ y:{ beginAtZero:true } } }
+  });
+
+  // Sector distribution (pie of counts) and avg price per sector (optional)
+  const sectorMap = {};
+  list.forEach(d=>{
+    if(!sectorMap[d.sector]) sectorMap[d.sector] = {count:0,sumPrice:0};
+    sectorMap[d.sector].count++;
+    sectorMap[d.sector].sumPrice += Number(d.price);
+  });
+  const sectorLabels = Object.keys(sectorMap);
+  const sectorCounts = sectorLabels.map(s=>sectorMap[s].count);
+  const sectorAvgPrice = sectorLabels.map(s=> Math.round((sectorMap[s].sumPrice/sectorMap[s].count)*100)/100 );
+
+  if(charts.sector) charts.sector.destroy();
+  charts.sector = new Chart(document.getElementById('sectorChart'), {
+    type:'doughnut',
+    data:{ labels: sectorLabels, datasets:[ { data: sectorCounts, backgroundColor: sectorLabels.map(pickColor) } ] },
+    options:{ responsive:true, animation:{duration:700}, plugins:{legend:{position:'bottom'}}}
+  });
+  // show sector stats
+  document.getElementById('sectorStats').innerHTML = sectorLabels.map((s,i)=>`<div style="display:inline-block;margin-right:12px"><strong style="color:${pickColor(s)}">${s}</strong>: ${sectorCounts[i]} stocks • avg ₹${sectorAvgPrice[i]}</div>`).join('');
+
+  // Volume chart (bar)
+  const volLabels = list.slice(0, Math.min(30,list.length)).map(d=>d.symbol);
+  const volData = list.slice(0, Math.min(30,list.length)).map(d=>d.volume);
+  if(charts.volume) charts.volume.destroy();
+  charts.volume = new Chart(document.getElementById('volumeChart'), {
+    type:'bar',
+    data:{ labels: volLabels, datasets:[ { label:'Volume', data: volData, backgroundColor:'#8b5cf6' } ] },
+    options:{ responsive:true, animation:{duration:700}, scales:{ y:{ ticks:{ callback: v => v >= 1000 ? (v/1000)+'k' : v } } } }
   });
 }
 
-loadCSV();
-</script>
+// small legend update listing top sectors
+function updateLegend(){
+  const sectors = [...new Set(DATA.map(d=>d.sector))].slice(0,8);
+  document.getElementById('legend').innerHTML = sectors.map(s => `<div style="display:flex;align-items:center;gap:8px"><span style="width:12px;height:12px;background:${pickColor(s)};border-radius:4px"></span><span>${s}</span></div>`).join('');
+}
 
+// Download CSV button
+document.getElementById('downloadBtn').addEventListener('click', ()=>{
+  // rebuild CSV from RAW (if original header present) or from HEAD
+  const headerRow = HEAD.length ? HEAD.join(',') : 'Symbol,Company,Price,PE,EPS,Sector,Volume';
+  const rows = DATA.map(d => [d.symbol,d.company,d.price,d.pe,d.eps,d.sector,d.volume].join(','));
+  const csv = [headerRow].concat(rows).join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'data_export.csv'; a.click();
+});
+
+// Reload button
+document.getElementById('reloadBtn').addEventListener('click', ()=>{
+  init();
+});
+
+// Theme toggle
+document.getElementById('themeToggle').addEventListener('click', ()=>{
+  const el = document.body;
+  const current = el.getAttribute('data-theme') || 'light';
+  const next = current === 'light' ? 'dark' : 'light';
+  el.setAttribute('data-theme', next);
+  document.getElementById('themeToggle').innerText = next==='dark' ? '☀️' : '🌙';
+});
+
+// init
+init();
+
+</script>
 </body>
 </html>
